@@ -1,0 +1,332 @@
+// Layoutcraft Studio — data model.
+//
+// Shape of the business this encodes: a design studio is an Organization,
+// people are Users who hold a Membership in it, and the thing they sell is a
+// Project. A project's design lives in a single JSON document validated by
+// @layoutcraft/core rather than in normalised tables, because the editor loads
+// and saves the whole document atomically and the schema of that document
+// changes with product releases, not with migrations.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/* ------------------------------------------------------------------ *
+ * People and tenancy
+ * ------------------------------------------------------------------ */
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  passwordHash  String?
+  emailVerified DateTime?
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt      DateTime @updatedAt
+  lastSeenAt    DateTime?
+
+  memberships     Membership[]
+  sessions        Session[]
+  projectsCreated Project[]      @relation("projectCreatedBy")
+  versions        ProjectVersion[]
+  auditLogs       AuditLog[]
+  verifications   VerificationToken[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  // SHA-256 of the cookie value, so a leaked database row is not a usable session
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userAgent String?
+  ip        String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model VerificationToken {
+  id        String               @id @default(cuid())
+  userId    String?
+  email     String
+  tokenHash String               @unique
+  purpose   VerificationPurpose
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime             @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([email, purpose])
+}
+
+enum VerificationPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+  MAGIC_LINK
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // what appears on a quote
+  studioName    String?
+  studioAddress String?
+  studioContact String?
+  taxId         String?
+  logoUrl       String?
+  // brand accent used on client-facing pages, as a hex string
+  brandColor    String?
+  // defaults applied to every new project in this studio
+  defaultCurrency String  @default("INR")
+  defaultUnits    String  @default("metric")
+  defaultTaxLabel String  @default("GST")
+  defaultTaxRate  Float   @default(18)
+  defaultTerms    String?
+
+  members      Membership[]
+  projects     Project[]
+  invites      Invite[]
+  rateCards    RateCard[]
+  subscription Subscription?
+  auditLogs    AuditLog[]
+}
+
+model Membership {
+  id        String   @id @default(cuid())
+  userId    String
+  orgId     String
+  role      Role     @default(DESIGNER)
+  createdAt DateTime @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, orgId])
+  @@index([orgId])
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  DESIGNER
+  VIEWER
+}
+
+model Invite {
+  id        String   @id @default(cuid())
+  orgId     String
+  email     String
+  role      Role     @default(DESIGNER)
+  tokenHash String   @unique
+  invitedBy String?
+  expiresAt DateTime
+  acceptedAt DateTime?
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+  @@index([email])
+}
+
+/* ------------------------------------------------------------------ *
+ * Billing
+ * ------------------------------------------------------------------ */
+
+model Subscription {
+  id                   String             @id @default(cuid())
+  orgId                String             @unique
+  plan                 Plan               @default(TRIAL)
+  status               SubscriptionStatus @default(TRIALING)
+  stripeCustomerId     String?            @unique
+  stripeSubscriptionId String?            @unique
+  stripePriceId        String?
+  seats                Int                @default(1)
+  currentPeriodEnd     DateTime?
+  trialEndsAt          DateTime?
+  cancelAtPeriodEnd    Boolean            @default(false)
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+}
+
+enum Plan {
+  TRIAL
+  SOLO
+  STUDIO
+  PRACTICE
+}
+
+enum SubscriptionStatus {
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  INCOMPLETE
+  // the trial ran out and nobody paid: read-only, nothing deleted
+  EXPIRED
+}
+
+/* ------------------------------------------------------------------ *
+ * Work
+ * ------------------------------------------------------------------ */
+
+model Project {
+  id          String        @id @default(cuid())
+  orgId       String
+  name        String
+  clientName  String        @default("")
+  status      ProjectStatus @default(DRAFT)
+  // the @layoutcraft/core Project document
+  data        Json
+  // denormalised for list views, so the gallery never parses every document
+  roomCount   Int           @default(0)
+  itemCount   Int           @default(0)
+  quoteTotal  Float         @default(0)
+  currency    String        @default("INR")
+  styleId     String        @default("modern")
+  thumbnailUrl String?
+  createdById String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  archivedAt  DateTime?
+
+  organization Organization     @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  createdBy    User?            @relation("projectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  versions     ProjectVersion[]
+  shareLinks   ShareLink[]
+  comments     Comment[]
+
+  @@index([orgId, updatedAt])
+  @@index([orgId, status])
+}
+
+enum ProjectStatus {
+  DRAFT
+  // the quote has gone to the client
+  QUOTED
+  APPROVED
+  IN_PRODUCTION
+  COMPLETED
+  LOST
+}
+
+model ProjectVersion {
+  id          String   @id @default(cuid())
+  projectId   String
+  data        Json
+  label       String?
+  // set when this version is the one a share link was created against, so a
+  // quote a client has seen can never be silently edited underneath them
+  isSnapshot  Boolean  @default(false)
+  createdById String?
+  createdAt   DateTime @default(now())
+
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+}
+
+model ShareLink {
+  id           String      @id @default(cuid())
+  projectId    String
+  token        String      @unique
+  scope        ShareScope  @default(PRESENTATION)
+  // pins the link to an immutable version; null means "always current"
+  versionId    String?
+  passwordHash String?
+  expiresAt    DateTime?
+  revokedAt    DateTime?
+  viewCount    Int         @default(0)
+  lastViewedAt DateTime?
+  allowComments Boolean    @default(true)
+  createdById  String?
+  createdAt    DateTime    @default(now())
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  comments Comment[]
+
+  @@index([projectId])
+}
+
+enum ShareScope {
+  // 3D walkthrough and moodboard only, no prices
+  PRESENTATION
+  // the quote, with prices
+  QUOTE
+  // everything a client should see: presentation plus quote
+  FULL
+}
+
+model Comment {
+  id          String      @id @default(cuid())
+  projectId   String
+  shareLinkId String?
+  authorName  String
+  authorEmail String?
+  body        String
+  // what the comment is attached to: a room, an item, or the project overall
+  targetKind  CommentTarget @default(PROJECT)
+  targetId    String?
+  resolvedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  project   Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  shareLink ShareLink? @relation(fields: [shareLinkId], references: [id], onDelete: SetNull)
+
+  @@index([projectId, createdAt])
+}
+
+enum CommentTarget {
+  PROJECT
+  ROOM
+  ITEM
+  QUOTE_LINE
+}
+
+model RateCard {
+  id        String   @id @default(cuid())
+  orgId     String
+  name      String
+  // catalog key -> rate in the studio's currency
+  rates     Json
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  orgId     String
+  userId    String?
+  action    String
+  target    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  organization Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, createdAt])
+}

@@ -1,0 +1,33 @@
+{
+  "name": "@layoutcraft/render3d",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Studio-quality realtime renderer: procedural PBR materials, image-based lighting, soft shadows and a progressive still-render mode.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "@layoutcraft/core": "*",
+    "@react-three/drei": "10.0.6",
+    "@react-three/fiber": "9.1.0",
+    "@react-three/postprocessing": "3.0.4",
+    "postprocessing": "6.36.4",
+    "three": "0.170.0",
+    "zustand": "5.0.3"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/three": "0.170.0",
+    "typescript": "5.7.3"
+  }
+}

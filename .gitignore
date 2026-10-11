@@ -218,3 +218,34 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---------------------------------------------------------------------------
+# Node / Layoutcraft
+# ---------------------------------------------------------------------------
+node_modules/
+.npm
+npm-debug.log*
+yarn-error.log*
+
+# build output
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# generated Prisma client
+packages/db/generated/
+
+# local tooling
+.turbo/
+coverage/
+playwright-report/
+test-results/
+.DS_Store

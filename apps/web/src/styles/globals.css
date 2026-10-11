@@ -1,0 +1,210 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Tokens are defined once here and consumed through Tailwind's colour names,
+  so dark mode is a single block of overrides rather than a `dark:` prefix on
+  every element.
+*/
+:root {
+  --bg: #e9ece9;
+  --panel: #f5f7f5;
+  --paper: #fbfcfb;
+  --ink: #182225;
+  --muted: #5a6769;
+  --line: #ccd5d1;
+  --line2: #dee4e1;
+  --accent: #a96c18;
+  --accent-ink: #ffffff;
+  --accent-soft: #f5e7d2;
+  --good: #246f4a;
+  --warn: #9a6516;
+  --bad: #b83f29;
+  --bad-soft: #f8ddd6;
+  --shade: rgb(20 30 32 / 0.12);
+  --grid: #dfe6e2;
+
+  --font-display: "Bricolage Grotesque", system-ui;
+  --font-body: "IBM Plex Sans", system-ui;
+  --font-mono: "IBM Plex Mono", ui-monospace;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1516;
+    --panel: #161e20;
+    --paper: #1b2426;
+    --ink: #e3ebe9;
+    --muted: #93a3a3;
+    --line: #2c3739;
+    --line2: #222d2f;
+    --accent: #e0a24f;
+    --accent-ink: #1b1307;
+    --accent-soft: #3b2c17;
+    --good: #5fbe8a;
+    --warn: #d9a84f;
+    --bad: #ef7b64;
+    --bad-soft: #3e231e;
+    --shade: rgb(0 0 0 / 0.4);
+    --grid: #222e30;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0f1516;
+  --panel: #161e20;
+  --paper: #1b2426;
+  --ink: #e3ebe9;
+  --muted: #93a3a3;
+  --line: #2c3739;
+  --line2: #222d2f;
+  --accent: #e0a24f;
+  --accent-ink: #1b1307;
+  --accent-soft: #3b2c17;
+  --good: #5fbe8a;
+  --warn: #d9a84f;
+  --bad: #ef7b64;
+  --bad-soft: #3e231e;
+  --shade: rgb(0 0 0 / 0.4);
+  --grid: #222e30;
+  color-scheme: dark;
+}
+
+* {
+  min-width: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--ink);
+}
+
+/* Numbers in tables and inspectors must line up to be comparable. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-family: var(--font-mono);
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg border border-line bg-paper px-3 py-2 text-[13px] font-medium
+      transition-colors duration-150 hover:border-muted disabled:pointer-events-none disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply border-accent bg-accent text-accent-ink hover:brightness-105 hover:border-accent;
+  }
+  .btn-ghost {
+    @apply border-transparent bg-transparent hover:border-line hover:bg-paper;
+  }
+  .btn-danger {
+    @apply text-bad hover:border-bad;
+  }
+  .btn-sm {
+    @apply px-2.5 py-1.5 text-xs;
+  }
+
+  .field {
+    @apply flex min-w-0 flex-col gap-1;
+  }
+  .field > span {
+    @apply text-[11.5px] text-muted;
+  }
+  .input {
+    @apply w-full rounded-lg border border-line bg-paper px-2.5 py-2 text-[13px]
+      outline-none transition-colors focus:border-accent;
+  }
+  .input-num {
+    @apply tnum text-[13px];
+  }
+
+  .card {
+    @apply rounded-xl border border-line bg-paper shadow-card;
+  }
+  .panel {
+    @apply rounded-xl border border-line bg-panel;
+  }
+
+  .label-caps {
+    @apply text-[10.5px] font-semibold uppercase tracking-[0.09em] text-muted;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2 py-0.5 text-[11.5px] font-medium;
+  }
+  .pill-ok {
+    @apply bg-good/15 text-good;
+  }
+  .pill-warn {
+    @apply bg-warn/15 text-warn;
+  }
+  .pill-bad {
+    @apply bg-bad-soft text-bad;
+  }
+  .pill-on {
+    @apply bg-accent-soft text-accent;
+  }
+}
+
+/* The 2D plan: a drafting surface, so no text selection or touch scrolling. */
+.plan-svg {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.plan-svg [data-item] {
+  cursor: grab;
+}
+.plan-svg [data-item]:active {
+  cursor: grabbing;
+}
+.plan-svg [data-room] {
+  cursor: pointer;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .print-page {
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "name": "layoutcraft",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Layoutcraft Studio \u2014 professional 3D interior design and quoting platform for design studios.",
+  "license": "SEE LICENSE IN LICENSE",
+  "engines": {
+    "node": ">=20.11"
+  },
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @layoutcraft/web",
+    "build": "npm run build --workspace @layoutcraft/core && npm run build --workspace @layoutcraft/web",
+    "start": "npm run start --workspace @layoutcraft/web",
+    "lint": "npm run lint --workspace @layoutcraft/web",
+    "typecheck": "tsc -b packages/core && tsc -p packages/render3d --noEmit && tsc -p apps/web --noEmit",
+    "test": "npm run build --workspace @layoutcraft/core && node --test packages/core/test/*.test.mjs",
+    "db:generate": "npm run generate --workspace @layoutcraft/db",
+    "db:push": "npm run push --workspace @layoutcraft/db",
+    "db:migrate": "npm run migrate --workspace @layoutcraft/db",
+    "db:studio": "npm run studio --workspace @layoutcraft/db",
+    "db:seed": "npm run seed --workspace @layoutcraft/db",
+    "stripe:listen": "stripe listen --forward-to localhost:3000/api/stripe/webhook",
+    "check": "npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "typescript": "5.7.3"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "name": "@layoutcraft/core",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Framework-free domain core: spatial model, furniture catalog, auto-layout, code validation, pricing and fabrication export.",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalog": "./src/catalog/index.ts"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo"
+  },
+  "dependencies": {
+    "zod": "3.24.1"
+  },
+  "devDependencies": {
+    "typescript": "5.7.3"
+  }
+}

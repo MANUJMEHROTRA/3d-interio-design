@@ -1,0 +1,22 @@
+# Local development dependencies. Nothing here is production configuration.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: layoutcraft-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: layoutcraft
+      POSTGRES_PASSWORD: layoutcraft
+      POSTGRES_DB: layoutcraft
+    ports:
+      - "5434:5432"
+    volumes:
+      - layoutcraft-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U layoutcraft -d layoutcraft"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  layoutcraft-pgdata:
